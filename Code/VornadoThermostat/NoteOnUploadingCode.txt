@@ -1,0 +1,1 @@
+NOTE: When uploading to the bootleg Arduino Nano choose Processor -> AtMega328P Old Bootloader

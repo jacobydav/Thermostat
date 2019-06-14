@@ -16,8 +16,10 @@
 SSD1306_text oled(0);
 int intervalLCDUpdate = 10000;  //update the LCD every x milliseconds
 unsigned long lastLCDUpdate_ms = 0;   //when the LCD was last updated
+bool forceLCDUpdate = true;    //Used to update the LCD immediately when a value changes such as the temperature.
 //LCD end
 
+//RF Receiver begin
 // ring buffer size has to be large enough to fit
 // data between two successive sync signals
 #define RING_BUFFER_SIZE  256
@@ -33,6 +35,7 @@ unsigned long timings[RING_BUFFER_SIZE];
 unsigned int syncIndex1 = 0;  // index of the first sync signal
 unsigned int syncIndex2 = 0;  // index of the second sync signal
 bool received = false;
+//RF Receiver end
 
 //Temperature decision variables begin
 #define TEM_VAL_BUFFER_SIZE  4        //how many temperature readings to store
@@ -46,8 +49,10 @@ byte desiredTem = 74;             //The desired temperature. Will be stored in E
 int desiredTemEEPROMAddress = 0;
 byte desiredTemMin = 55;
 byte desiredTemMax = 80;
-int desiredTemUpPin = 5;          //The input that the desired temp up button is connected to.
-int desiredTemDownPin = 6;          //The input that the desired temp down button is connected to.
+int desiredTemUpPin = 7;          //The input that the desired temp up button is connected to.
+int desiredTemDownPin = 9;          //The input that the desired temp down button is connected to.
+bool temUpPressed = false;        //used to prevent multiple readings of the same button press
+bool temDownPressed = false;        //used to prevent multiple readings of the same button press
 unsigned long heatStartTime = 0; //The time when the heater was turned on;
 unsigned long heatStopTime = 0;   //The time when the heater was turned off;
 float currAvgTemp = 0;    //The current average temperature.
@@ -55,6 +60,10 @@ float desiredTemTol = 2.0;   //The tolerance used with the desired Temperature
 unsigned long heatOffTime = 0;
 unsigned long heatOnTime = 0;
 //Temperature decision variables end
+
+//Relay begin
+int relayOutPin = 5;
+//Relay end
 
 // detect if a sync signal is present
 bool isSync(unsigned int idx) {
@@ -72,7 +81,8 @@ bool isSync(unsigned int idx) {
   return false;
 }
 
-/* Interrupt 1 handler */
+// Interrupt 1 handler
+//For input from RF receiver (temperature sensor)
 void handler() {
   static unsigned long duration = 0;
   static unsigned long lastTime = 0;
@@ -123,13 +133,15 @@ void setup() {
   Serial.begin(9600);
   Serial.println("Started.");
   //Desired temperature buttons begin
-  pinMode(desiredTemUpPin, INPUT);    // desired temp up button
-  pinMode(desiredTemDownPin, INPUT);    // desired temp down button
+  pinMode(desiredTemUpPin, INPUT_PULLUP);    // desired temp up button
+  pinMode(desiredTemDownPin, INPUT_PULLUP);    // desired temp down button
+  //Relay output begin
+  pinMode(relayOutPin, OUTPUT);
   //get the desired temperature from EEPROM
   desiredTem = EEPROM.read(desiredTemEEPROMAddress);
   //If the value is not valid, start at 68 degrees
   if(desiredTem<desiredTemMin || desiredTem>desiredTemMax)
-  {
+  {    
     desiredTem = 68;
     EEPROM.write(desiredTemEEPROMAddress, desiredTem);
   }
@@ -169,8 +181,14 @@ void setup() {
 
 void loop() 
 {
-  //Check for Desired Temperature Up button
-  if(
+  //**********Desired Temperature Up/Down Begin*****************
+  //Check for Desired Temperature Up or Down button
+  //If either is pressed then we will enter into "adjust desired temp mode" for a few seconds  
+  if(digitalRead(desiredTemUpPin)==0 || digitalRead(desiredTemDownPin)==0)
+  {
+    updateDesTemp();    
+  }  
+  //**********Desired Temperature Up/Down End*****************
   //If temp sensor interrupt occured.
   if (received == true) {
     // disable interrupt to avoid new data corrupting the buffer
@@ -230,7 +248,7 @@ void loop()
       Serial.println("F");
       newTemperatureReading((temp+5)*9/50+32);
     } else {
-      Serial.println("Decoding error.");
+      Serial.println(F("Decoding error."));
     } 
     // delay for 1 second to avoid repetitions
     delay(1000);
@@ -240,13 +258,16 @@ void loop()
 
     // re-enable interrupt
     attachInterrupt(1, handler, CHANGE);
+
+    //Force the LCD to update
+    forceLCDUpdate=true;
   }
   else
   {
     delay(100);
   }
   //update the display
-  updateLCD();
+  updateLCD(0);
 }
 
 //When a new temperature reading is available
@@ -270,7 +291,7 @@ void newTemperatureReading(int newTemVal)
   //If the buffer is NOT full, then we can add the new val to buffer and end the routine.
   if(isBuffFull==false)
   {
-    Serial.println("Buffer not full yet");
+    Serial.println(F("Buffer not full yet"));
     //add the new value to the buffer
     temVals[currTemValInd] = newTemVal;
     currTemValInd++;
@@ -289,9 +310,9 @@ void newTemperatureReading(int newTemVal)
   
   //Get the difference between the buffer average and the new value
   buffAvgDiff = abs(currAvgTemp-newTemVal);
-  Serial.print("currAvgTemp=");
+  Serial.print(F("currAvgTemp="));
   Serial.println(currAvgTemp);
-  Serial.print("buffAvgDiff=");
+  Serial.print(F("buffAvgDiff="));
   Serial.println(buffAvgDiff);
   //check if it is within 5 degrees
   //if YES then update the buffer and advance the buffer index
@@ -312,16 +333,24 @@ void newTemperatureReading(int newTemVal)
     currTemValInd++;
     //make a decision about turning the heater on or off
     //if it is colder than the desired temperature
-    if(currAvgTemp<desiredTem-desiredTemTol)
+    float desiredTemMin = desiredTem-desiredTemTol;
+    Serial.print(F("desiredTem-desiredTemTol = "));
+    Serial.println(desiredTemMin);
+    float desiredTemMax = desiredTem+desiredTemTol;
+    Serial.print(F("desiredTem+desiredTemTol = "));
+    Serial.println(desiredTemMax);
+    if(currAvgTemp<desiredTemMin)
     {
       if(isHeatOn==false)
       {        
+        Serial.print(F("heatOffTime = "));
+        Serial.println(heatOffTime);
         if(heatOffTime>minOffTime_ms)
         {
           isHeatOn=true;
           heatStartTime = millis();
           //turn heater on
-          Serial.println("Turning heater on");
+          Serial.println(F("Turning heater on"));
         }
       }
       else
@@ -331,25 +360,30 @@ void newTemperatureReading(int newTemVal)
         if(heatOnTime>maxOnTime_ms)
         {
           //turn heater off
-          Serial.println("Turning heater off because maxOnTime was exceded");
+          Serial.println(F("Turning heater off because maxOnTime was exceded"));
           isHeatOn=false;
           heatStopTime = millis(); 
         }
       }
     }
-    else if(currAvgTemp>desiredTem+desiredTemTol)
+    else if(currAvgTemp>desiredTemMax)
     {
       //if we are at desired temperature and heater is on, then turn heater off      
       if(isHeatOn==true)
       {
-        
+        Serial.print(F("Heat on time = "));
+         Serial.println(heatOnTime);
         //Only turn off the heater if it has been on for the minimum time.
         if(heatOnTime>minOnTime_ms)
         {
           //turn heater off
-          Serial.println("Turning heater off");
+          Serial.println(F("Turning heater off"));
           isHeatOn=false;
           heatStopTime = millis();
+        }
+        else
+        {
+          Serial.println(F("Not turning heater off because minOnTime_ms was not reached"));
         }
       }
     }
@@ -357,27 +391,102 @@ void newTemperatureReading(int newTemVal)
   else
   {
     //if the new value is not valid, don't advance the buffer index
-    Serial.println("Value is out of tolerance.");
+    Serial.println(F("Value is out of tolerance."));
   }
 }
 
-//update temperature
+//update desired temperature
+//In this mode we will monitor pushbutton states for temperature up/down.
+//Interrupts from the Temperature sensor will be disabled.
+//The LCD will be updated quickly
 void updateDesTemp()
-{
-  //EEPROM.write(addr, val);
+{  
+  Serial.println(F("Entering updateDesTemp"));
+  // disable interrupt to avoid new data corrupting the buffer
+  detachInterrupt(1);
+  //Use the index of the for loop to keep track of when the last press occurred.
+  int lastUpPress=0;
+  int lastDownPress=0;
+  int minPressInterval = 10;
+
+  for(int i=0;i<1000;i++)
+  {
+    if(digitalRead(desiredTemUpPin)==0)
+    {
+      //Check that the value is below max and we meet the debounce interval
+      if(desiredTem<desiredTemMax && i-lastUpPress>minPressInterval)
+      {
+        Serial.println(F("Temp Up"));
+        lastUpPress=i;
+        desiredTem=desiredTem+1;
+        //Force the LCD to update
+        forceLCDUpdate=true;
+        updateLCD(1);
+      }
+    }
+
+    if(digitalRead(desiredTemDownPin)==0)
+    {
+      //Check that the value is below min and we meet the debounce interval
+      if(desiredTem>desiredTemMin && i-lastDownPress>minPressInterval)
+      {
+        Serial.println(F("Temp Down"));
+        lastDownPress=i;
+        desiredTem=desiredTem-1;
+        //Force the LCD to update
+        forceLCDUpdate=true;
+        updateLCD(1);
+      }
+    }
+        
+    //Delay
+    delay(10);         
+  }
+  
+
+  //Update temp in memory
+  EEPROM.write(desiredTemEEPROMAddress, desiredTem);
+
+  // re-enable interrupt
+  attachInterrupt(1, handler, CHANGE);
+
+  //Testing begin
+  digitalWrite(relayOutPin,LOW);
+  //TEsting end
+
+  Serial.println(F("Exiting updateDesTemp"));
 }
 
+
+
+
 //Update the data on the display
-void updateLCD()
+//dispMode controls what is displayed on the screen
+//dispMode=0 is default readout
+//dispMode=1 is updateDesTemp mode.
+void updateLCD(int dispMode)
 {
   unsigned long timeSinceLastUpdate = millis()-lastLCDUpdate_ms;
-  if(timeSinceLastUpdate>intervalLCDUpdate)
+  //LCD is updated on regular intervals. It can also be forced to update using the forceLCDUpdate flag
+  if(timeSinceLastUpdate>intervalLCDUpdate || forceLCDUpdate==true)
   {
+    //Clear the force update flag
+    forceLCDUpdate=false;
+    
     oled.clear();
     //Current temp label
     oled.setCursor(0, 10);        // cursor row , pixel column 
     oled.setTextSize(1, 3);       // character size (x), spacing (pixels)
-    oled.write("Temp");
+    //In default mode: show the label "Temp"
+    //In updateDesTemp mode: show the label "Update"
+    if(dispMode==0)
+    {
+      oled.write("Temp");
+    }
+    else if(dispMode==1)
+    {
+      oled.write("Update");
+    }
     //Desired temp label
     oled.setCursor(0, 100);        
     oled.setTextSize(1, 3);       
@@ -385,7 +494,11 @@ void updateLCD()
     //Current temp value
     oled.setCursor(2, 10);        
     oled.setTextSize(2, 3); 
-    oled.print(currAvgTemp,0);
+    //In default mode, show the curr temp
+    if(dispMode==0)
+    {
+      oled.print(currAvgTemp,0);
+    }
     //Set temp value
     oled.setCursor(2, 90);        
     oled.setTextSize(2, 3);

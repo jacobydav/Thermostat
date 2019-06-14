@@ -1,0 +1,254 @@
+EESchema Schematic File Version 4
+LIBS:VornadoThermostat-cache
+EELAYER 26 0
+EELAYER END
+$Descr A4 11693 8268
+encoding utf-8
+Sheet 1 1
+Title ""
+Date ""
+Rev ""
+Comp ""
+Comment1 ""
+Comment2 ""
+Comment3 ""
+Comment4 ""
+$EndDescr
+$Comp
+L Converter_ACDC:IRM-02-5 PS?
+U 1 1 5CA132DA
+P 3100 2900
+F 0 "PS?" H 3100 3225 50  0000 C CNN
+F 1 "IRM-02-5" H 3100 3134 50  0000 C CNN
+F 2 "Converter_ACDC:Converter_ACDC_MeanWell_IRM-02-xx_THT" H 3100 2600 50  0001 C CNN
+F 3 "http://www.meanwell.com/productPdf.aspx?i=675" H 3500 2550 50  0001 C CNN
+	1    3100 2900
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:Heater R?
+U 1 1 5CA133DD
+P 3100 3450
+F 0 "R?" H 3170 3496 50  0000 L CNN
+F 1 "Heater" H 3170 3405 50  0000 L CNN
+F 2 "" V 3030 3450 50  0001 C CNN
+F 3 "~" H 3100 3450 50  0001 C CNN
+	1    3100 3450
+	1    0    0    -1  
+$EndComp
+$Comp
+L MCU_Module:Arduino_UNO_R3 A?
+U 1 1 5CA134CA
+P 4650 2550
+F 0 "A?" H 4650 2650 50  0000 C CNN
+F 1 "Arduino_UNO_R3" V 4550 2600 50  0000 C CNN
+F 2 "Module:Arduino_UNO_R3" H 4800 1500 50  0001 L CNN
+F 3 "https://www.arduino.cc/en/Main/arduinoBoardUno" H 4450 3600 50  0001 C CNN
+	1    4650 2550
+	1    0    0    -1  
+$EndComp
+$Comp
+L JacobSymbol:433MhzReceiver U?
+U 1 1 5CA13808
+P 6400 2500
+F 0 "U?" H 6678 2080 50  0000 L CNN
+F 1 "433MhzReceiver" H 6400 2650 50  0001 C CNN
+F 2 "" H 6400 2500 50  0001 C CNN
+F 3 "" H 6400 2500 50  0001 C CNN
+	1    6400 2500
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	2700 3000 2700 3600
+Wire Wire Line
+	2700 3600 3100 3600
+Connection ~ 2700 3000
+Wire Wire Line
+	2550 2800 2550 3300
+Wire Wire Line
+	2550 3300 3100 3300
+Connection ~ 2550 2800
+Wire Wire Line
+	2550 2800 2700 2800
+$Comp
+L Connector:Conn_WallPlug P?
+U 1 1 5CA13A4C
+P 2200 2900
+F 0 "P?" H 2215 3225 50  0000 C CNN
+F 1 "Conn_WallPlug" H 2215 3134 50  0000 C CNN
+F 2 "" H 2600 2900 50  0001 C CNN
+F 3 "~" H 2600 2900 50  0001 C CNN
+	1    2200 2900
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	2400 2800 2550 2800
+Wire Wire Line
+	2400 3000 2700 3000
+Wire Wire Line
+	3500 1200 4850 1200
+Wire Wire Line
+	4850 1200 4850 1550
+Wire Wire Line
+	4550 3650 3700 3650
+Wire Wire Line
+	3700 3650 3700 3000
+Wire Wire Line
+	3700 3000 3500 3000
+Wire Wire Line
+	6050 2550 5600 2550
+Wire Wire Line
+	5600 3700 4750 3700
+Wire Wire Line
+	4750 3700 4750 3650
+Wire Wire Line
+	4850 1200 5850 1200
+Wire Wire Line
+	5850 1200 5850 2850
+Wire Wire Line
+	5850 2850 6050 2850
+Connection ~ 4850 1200
+Wire Wire Line
+	4150 2250 4050 2250
+Wire Wire Line
+	4050 2250 4050 1300
+Wire Wire Line
+	4050 1300 6000 1300
+Wire Wire Line
+	6000 1300 6000 2650
+$Comp
+L JacobSymbol:SLA-05VDC-SL-C U?
+U 1 1 5CCDAB39
+P 6900 1050
+F 0 "U?" H 6925 1215 50  0000 C CNN
+F 1 "SLA-05VDC-SL-C" H 6925 1124 50  0000 C CNN
+F 2 "" H 6900 1050 50  0001 C CNN
+F 3 "" H 6900 1050 50  0001 C CNN
+	1    6900 1050
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	6350 1200 5850 1200
+Connection ~ 5850 1200
+Wire Wire Line
+	5600 2550 5600 1400
+Wire Wire Line
+	5600 1400 6350 1400
+Connection ~ 5600 2550
+Wire Wire Line
+	4150 2450 3850 2450
+Wire Wire Line
+	3850 2450 3850 1050
+Wire Wire Line
+	3850 1050 6200 1050
+Wire Wire Line
+	6200 1050 6200 1650
+Wire Wire Line
+	6200 1650 6350 1650
+Text Notes 7550 1400 0    50   ~ 0
+Line from Vornado tilt switch
+Text Notes 7550 1650 0    50   ~ 0
+Line to Vornado tilt switch
+$Comp
+L Display_Character:EA_T123X-I2C U?
+U 1 1 5CCF373E
+P 2000 1250
+F 0 "U?" H 2429 1296 50  0000 L CNN
+F 1 "EA_T123X-I2C" H 2429 1205 50  0000 L CNN
+F 2 "Display:EA_T123X-I2C" H 2000 650 50  0001 C CNN
+F 3 "http://www.lcd-module.de/pdf/doma/t123-i2c.pdf" H 2000 750 50  0001 C CNN
+	1    2000 1250
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	1500 1550 1500 2000
+Wire Wire Line
+	2000 1750 3700 1750
+Wire Wire Line
+	3700 1750 3700 3000
+Connection ~ 3700 3000
+Wire Wire Line
+	1500 1050 1350 1050
+Wire Wire Line
+	1350 1050 1350 4000
+Wire Wire Line
+	1350 4000 5300 4000
+Wire Wire Line
+	1500 950  1200 950 
+Wire Wire Line
+	1200 950  1200 4150
+Wire Wire Line
+	1200 4150 5400 4150
+Wire Wire Line
+	5300 2950 5150 2950
+Wire Wire Line
+	5300 2950 5300 4000
+Wire Wire Line
+	5150 3050 5400 3050
+Wire Wire Line
+	5400 3050 5400 4150
+Wire Wire Line
+	6050 2650 6000 2650
+$Comp
+L Switch:SW_Push SW?
+U 1 1 5CE0680D
+P 3950 4600
+F 0 "SW?" V 3904 4748 50  0000 L CNN
+F 1 "SW_Push" V 3995 4748 50  0000 L CNN
+F 2 "" H 3950 4800 50  0001 C CNN
+F 3 "" H 3950 4800 50  0001 C CNN
+	1    3950 4600
+	0    1    1    0   
+$EndComp
+$Comp
+L Switch:SW_Push SW?
+U 1 1 5CE0695E
+P 4800 4600
+F 0 "SW?" V 4754 4748 50  0000 L CNN
+F 1 "SW_Push" V 4845 4748 50  0000 L CNN
+F 2 "" H 4800 4800 50  0001 C CNN
+F 3 "" H 4800 4800 50  0001 C CNN
+	1    4800 4600
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	4150 2650 3950 2650
+Wire Wire Line
+	3950 2650 3950 4400
+Wire Wire Line
+	4150 2850 4050 2850
+Wire Wire Line
+	4050 2850 4050 4300
+Wire Wire Line
+	4050 4300 4800 4300
+Wire Wire Line
+	4800 4300 4800 4400
+Wire Wire Line
+	5600 3700 5600 4800
+Wire Wire Line
+	5600 4800 4800 4800
+Connection ~ 5600 3700
+Connection ~ 4800 4800
+Wire Wire Line
+	4800 4800 3950 4800
+Text Notes 4900 4450 0    50   ~ 0
+Temperature Down\n (yellow button)
+Text Notes 4000 4450 0    50   ~ 0
+Temperature Up \n(red button)
+Text Notes 6800 1850 0    50   ~ 0
+Relay
+Text Notes 6750 3050 0    50   ~ 0
+Temperature Sensor
+Wire Wire Line
+	3500 1200 3500 2800
+Wire Wire Line
+	4750 1550 4750 1400
+Wire Wire Line
+	2800 1400 2800 2000
+Wire Wire Line
+	2800 2000 1500 2000
+Wire Wire Line
+	2800 1400 4750 1400
+Wire Wire Line
+	5600 2550 5600 3700
+$EndSCHEMATC
